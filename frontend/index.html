@@ -1,71 +1,122 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><title>Tickets FISI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>body{font-family:sans-serif;max-width:480px;margin:2rem auto;padding:0 1rem}
-input,select,textarea,button{display:block;width:100%;margin:.4rem 0 1rem;padding:.5rem;box-sizing:border-box}</style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script></head>
-<body>
-<h2>Reporte de incidencias – FISI</h2>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tickets FISI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 480px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      input,
+      select,
+      textarea,
+      button {
+        display: block;
+        width: 100%;
+        margin: 0.4rem 0 1rem;
+        padding: 0.5rem;
+        box-sizing: border-box;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+    <script src="config.js"></script>
+  </head>
+  <body>
+    <h2>Reporte de incidencias – FISI</h2>
 
-<div id="login">
-  <input id="email" type="email" placeholder="Correo del docente">
-  <input id="pass" type="password" placeholder="Contraseña">
-  <button onclick="login()">Iniciar sesión</button>
-</div>
+    <div id="login">
+      <input id="email" type="email" placeholder="Correo del docente" />
+      <input id="pass" type="password" placeholder="Contraseña" />
+      <button onclick="login()">Iniciar sesión</button>
+    </div>
 
-<div id="form" hidden>
-  <input id="pabellon" placeholder="Pabellón">
-  <input id="laboratorio" placeholder="Laboratorio">
-  <select id="categoria" onchange="cambiarCategoria()">
-    <option value="pantalla">Pantalla interactiva</option>
-    <option value="proyector">Proyector</option>
-  </select>
-  <label id="lbl"></label>
-  <textarea id="detalle" rows="3"></textarea>
-  <button onclick="resumir()">Ver resumen</button>
-</div>
+    <div id="form" hidden>
+      <input id="pabellon" placeholder="Pabellón" />
+      <input id="laboratorio" placeholder="Laboratorio" />
+      <select id="categoria" onchange="cambiarCategoria()">
+        <option value="pantalla">Pantalla interactiva</option>
+        <option value="proyector">Proyector</option>
+      </select>
+      <label id="lbl"></label>
+      <textarea id="detalle" rows="3"></textarea>
+      <button onclick="resumir()">Ver resumen</button>
+    </div>
 
-<div id="resumen" hidden>
-  <p>Esto es lo que se registrará:</p>
-  <pre id="txt"></pre>
-  <button onclick="confirmar()">Confirmar</button>
-  <button onclick="descartar()">Descartar</button>
-</div>
+    <div id="resumen" hidden>
+      <p>Esto es lo que se registrará:</p>
+      <pre id="txt"></pre>
+      <button onclick="confirmar()">Confirmar</button>
+      <button onclick="descartar()">Descartar</button>
+    </div>
 
-<div id="fin" hidden><p id="msg"></p><button onclick="ver('form')">Nuevo reporte</button></div>
+    <div id="fin" hidden>
+      <p id="msg"></p>
+      <button onclick="ver('form')">Nuevo reporte</button>
+    </div>
 
-<script>
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const $ = id => document.getElementById(id);
-const ver = id => ["login","form","resumen","fin"].forEach(s => $(s).hidden = s !== id);
-const CAMPO = {pantalla: "¿Qué falla tiene la pantalla? (sin imagen, no responde al tacto...)",
-               proyector: "¿Qué falla tiene el proyector? (no enciende, sin señal...)"};
-let token = null, borrador = null;
+    <script>
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const $ = (id) => document.getElementById(id);
+      const ver = (id) =>
+        ['login', 'form', 'resumen', 'fin'].forEach(
+          (s) => ($(s).hidden = s !== id),
+        );
+      const CAMPO = {
+        pantalla:
+          '¿Qué falla tiene la pantalla? (sin imagen, no responde al tacto...)',
+        proyector: '¿Qué falla tiene el proyector? (no enciende, sin señal...)',
+      };
+      let token = null,
+        borrador = null;
 
-function cambiarCategoria(){ $("lbl").textContent = CAMPO[$("categoria").value]; }
-cambiarCategoria();
+      function cambiarCategoria() {
+        $('lbl').textContent = CAMPO[$('categoria').value];
+      }
+      cambiarCategoria();
 
-async function login(){
-  const {data, error} = await sb.auth.signInWithPassword({email: $("email").value, password: $("pass").value});
-  if (error) return alert(error.message);
-  token = data.session.access_token;
-  ver("form");
-}
-function resumir(){
-  borrador = {pabellon: $("pabellon").value, laboratorio: $("laboratorio").value,
-              categoria: $("categoria").value, detalle: $("detalle").value};
-  $("txt").textContent = JSON.stringify(borrador, null, 2);
-  ver("resumen");
-}
-async function confirmar(){
-  const r = await fetch("/api/tickets", {method: "POST",
-    headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
-    body: JSON.stringify(borrador)});
-  const d = await r.json();
-  $("msg").textContent = r.ok ? `Ticket #${d.id} registrado. Soporte será notificado.` : "Error: " + JSON.stringify(d);
-  ver("fin");
-}
-function descartar(){ borrador = null; $("msg").textContent = "Reporte descartado. No se registró nada."; ver("fin"); }
-</script>
-</body></html>
+      async function login() {
+        const { data, error } = await sb.auth.signInWithPassword({
+          email: $('email').value,
+          password: $('pass').value,
+        });
+        if (error) return alert(error.message);
+        token = data.session.access_token;
+        ver('form');
+      }
+      function resumir() {
+        borrador = {
+          pabellon: $('pabellon').value,
+          laboratorio: $('laboratorio').value,
+          categoria: $('categoria').value,
+          detalle: $('detalle').value,
+        };
+        $('txt').textContent = JSON.stringify(borrador, null, 2);
+        ver('resumen');
+      }
+      async function confirmar() {
+        const r = await fetch('/api/tickets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+          },
+          body: JSON.stringify(borrador),
+        });
+        const d = await r.json();
+        $('msg').textContent = r.ok
+          ? `Ticket #${d.id} registrado. Soporte será notificado.`
+          : 'Error: ' + JSON.stringify(d);
+        ver('fin');
+      }
+      function descartar() {
+        borrador = null;
+        $('msg').textContent = 'Reporte descartado. No se registró nada.';
+        ver('fin');
+      }
+    </script>
+  </body>
+</html>
